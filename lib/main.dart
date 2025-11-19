@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase/firebase_service.dart';
 import 'presentation/providers/auth_provider.dart';
+import 'presentation/screens/auth/login_screen.dart';
+import 'presentation/screens/auth/profile_setup_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,23 +78,41 @@ class _SplashScreenState extends State<SplashScreen> {
       if (!mounted) return;
 
       // Navigate based on auth state
-      // For now, just show a placeholder message since we haven't implemented screens yet
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Firebase configuration needed. Run: flutterfire configure'),
-          duration: Duration(seconds: 3),
-        ),
-      );
+      _navigateToAppropriateScreen(authProvider);
     } catch (e) {
       debugPrint('Initialization error: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Initialization error: $e'),
-          backgroundColor: Colors.red,
-        ),
+
+      // Navigate to login screen even if there's an error
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
     }
+  }
+
+  void _navigateToAppropriateScreen(AuthProvider authProvider) {
+    Widget targetScreen;
+
+    if (authProvider.isAuthenticated) {
+      if (authProvider.hasCompletedProfile) {
+        // TODO: Navigate to Home Screen when it's implemented
+        targetScreen = const Scaffold(
+          body: Center(
+            child: Text('Home Screen (Coming Soon)'),
+          ),
+        );
+      } else {
+        // Navigate to Profile Setup
+        targetScreen = const ProfileSetupScreen();
+      }
+    } else {
+      // Navigate to Login
+      targetScreen = const LoginScreen();
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => targetScreen),
+    );
   }
 
   @override
