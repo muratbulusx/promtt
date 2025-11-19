@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
+import 'firebase/firebase_service.dart';
+import 'presentation/providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,7 +14,21 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  runApp(const LimoncukApp());
+  // Note: Firebase initialization will be done asynchronously in SplashScreen
+  // to avoid blocking the app startup
+
+  runApp(
+    /// Setup providers
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(),
+        ),
+        // Additional providers will be added here
+      ],
+      child: const LimoncukApp(),
+    ),
+  );
 }
 
 class LimoncukApp extends StatelessWidget {
@@ -30,8 +47,53 @@ class LimoncukApp extends StatelessWidget {
   }
 }
 
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    try {
+      // Initialize Firebase (commented out until firebase_options.dart is generated)
+      // await FirebaseService().initialize();
+
+      // Initialize AuthProvider
+      final authProvider = context.read<AuthProvider>();
+      await authProvider.initialize();
+
+      // Wait for a minimum splash duration
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
+
+      // Navigate based on auth state
+      // For now, just show a placeholder message since we haven't implemented screens yet
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Firebase configuration needed. Run: flutterfire configure'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Initialization error: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Initialization error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
